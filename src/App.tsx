@@ -3,6 +3,27 @@ import { Sun, Award, Heart, RotateCw, Timer } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { allWords, getRandomWords } from './words';
 
+// Add new interface
+interface MobileWarningProps {
+  isVisible: boolean;
+}
+
+// Add mobile detection hook
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return isMobile;
+};
+
 interface Cell {
   row: number;
   col: number;
@@ -320,44 +341,65 @@ function App() {
 
         <div className="flex flex-col md:flex-row gap-8">
           {/* Game Grid */}
-            <div className="md:w-2/3 bg-white p-4 rounded-lg shadow-lg">
-            <div className="grid grid-cols-15 gap-1">
-              {grid.map((row, rowIndex) => (
-              row.map((letter, colIndex) => (
-                <div
-                key={`${rowIndex}-${colIndex}`}
-                className={`w-8 h-8 flex items-center justify-center font-bold text-lg cursor-pointer select-none
-                  ${isCellSelected(rowIndex, colIndex) ? 'bg-yellow-300' : 
-                  isCellFound(rowIndex, colIndex) ? 'bg-green-300' : 
-                  'bg-gray-100 hover:bg-gray-200'}`}
-                onMouseDown={() => handleMouseDown(rowIndex, colIndex, letter)}
-                onMouseEnter={() => handleMouseEnter(rowIndex, colIndex, letter)}
-                onMouseUp={handleMouseUp}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  handleMouseDown(rowIndex, colIndex, letter);
-                }}
-                onTouchMove={(e) => {
-                  e.preventDefault();
-                  const touch = e.touches[0];
-                  const element = document.elementFromPoint(touch.clientX, touch.clientY);
-                  const cellCoords = element?.getAttribute('data-coords');
-                  if (cellCoords) {
-                  const [touchRow, touchCol] = cellCoords.split('-').map(Number);
-                  handleMouseEnter(touchRow, touchCol, grid[touchRow][touchCol]);
-                  }
-                }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  handleMouseUp();
-                }}
-                data-coords={`${rowIndex}-${colIndex}`}
-                >
-                {letter}
-                </div>
-              ))
-              ))}
-            </div>
+            <div className="md:w-2/3 bg-white p-4 rounded-lg shadow-lg touch-none">
+              <div className="grid grid-cols-15 gap-1">
+                {grid.map((row, rowIndex) => (
+                  row.map((letter, colIndex) => (
+                    <div
+                      key={`${rowIndex}-${colIndex}`}
+                      className={`w-8 h-8 flex items-center justify-center font-bold text-lg cursor-pointer select-none
+                        ${isCellSelected(rowIndex, colIndex) ? 'bg-yellow-300' : 
+                        isCellFound(rowIndex, colIndex) ? 'bg-green-300' : 
+                        'bg-gray-100 hover:bg-gray-200'}`}
+                      onMouseDown={() => handleMouseDown(rowIndex, colIndex, letter)}
+                      onMouseEnter={() => {
+                        if (isSelecting) {
+                          const lastCell = selectedCells[selectedCells.length - 1];
+                          // Check if the move is valid (horizontal, vertical, or diagonal)
+                          const isValidMove = 
+                            Math.abs(rowIndex - lastCell.row) <= 1 && 
+                            Math.abs(colIndex - lastCell.col) <= 1 &&
+                            (rowIndex !== lastCell.row || colIndex !== lastCell.col);
+                          
+                          if (isValidMove) {
+                            handleMouseEnter(rowIndex, colIndex, letter);
+                          }
+                        }
+                      }}
+                      onMouseUp={handleMouseUp}
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        handleMouseDown(rowIndex, colIndex, letter);
+                      }}
+                      onTouchMove={(e) => {
+                        e.preventDefault();
+                        const touch = e.touches[0];
+                        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                        const cellCoords = element?.getAttribute('data-coords');
+                        if (cellCoords && isSelecting) {
+                          const [touchRow, touchCol] = cellCoords.split('-').map(Number);
+                          const lastCell = selectedCells[selectedCells.length - 1];
+                          const isValidMove = 
+                            Math.abs(touchRow - lastCell.row) <= 1 && 
+                            Math.abs(touchCol - lastCell.col) <= 1 &&
+                            (touchRow !== lastCell.row || touchCol !== lastCell.col);
+                          
+                          if (isValidMove) {
+                            handleMouseEnter(touchRow, touchCol, grid[touchRow][touchCol]);
+                          }
+                        }
+                      }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        handleMouseUp();
+                      }}
+                      data-coords={`${rowIndex}-${colIndex}`}
+                    >
+                      {letter}
+                    </div>
+                  ))
+                ))}
+              </div>
             </div>
 
           {/* Desktop Words List */}
