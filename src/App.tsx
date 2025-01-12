@@ -320,26 +320,45 @@ function App() {
 
         <div className="flex flex-col md:flex-row gap-8">
           {/* Game Grid */}
-          <div className="md:w-2/3 bg-white p-4 rounded-lg shadow-lg">
+            <div className="md:w-2/3 bg-white p-4 rounded-lg shadow-lg">
             <div className="grid grid-cols-15 gap-1">
               {grid.map((row, rowIndex) => (
-                row.map((letter, colIndex) => (
-                  <div
-                    key={`${rowIndex}-${colIndex}`}
-                    className={`w-8 h-8 flex items-center justify-center font-bold text-lg cursor-pointer select-none
-                      ${isCellSelected(rowIndex, colIndex) ? 'bg-yellow-300' : 
-                        isCellFound(rowIndex, colIndex) ? 'bg-green-300' : 
-                        'bg-gray-100 hover:bg-gray-200'}`}
-                    onMouseDown={() => handleMouseDown(rowIndex, colIndex, letter)}
-                    onMouseEnter={() => handleMouseEnter(rowIndex, colIndex, letter)}
-                    onMouseUp={handleMouseUp}
-                  >
-                    {letter}
-                  </div>
-                ))
+              row.map((letter, colIndex) => (
+                <div
+                key={`${rowIndex}-${colIndex}`}
+                className={`w-8 h-8 flex items-center justify-center font-bold text-lg cursor-pointer select-none
+                  ${isCellSelected(rowIndex, colIndex) ? 'bg-yellow-300' : 
+                  isCellFound(rowIndex, colIndex) ? 'bg-green-300' : 
+                  'bg-gray-100 hover:bg-gray-200'}`}
+                onMouseDown={() => handleMouseDown(rowIndex, colIndex, letter)}
+                onMouseEnter={() => handleMouseEnter(rowIndex, colIndex, letter)}
+                onMouseUp={handleMouseUp}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  handleMouseDown(rowIndex, colIndex, letter);
+                }}
+                onTouchMove={(e) => {
+                  e.preventDefault();
+                  const touch = e.touches[0];
+                  const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                  const cellCoords = element?.getAttribute('data-coords');
+                  if (cellCoords) {
+                  const [touchRow, touchCol] = cellCoords.split('-').map(Number);
+                  handleMouseEnter(touchRow, touchCol, grid[touchRow][touchCol]);
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleMouseUp();
+                }}
+                data-coords={`${rowIndex}-${colIndex}`}
+                >
+                {letter}
+                </div>
+              ))
               ))}
             </div>
-          </div>
+            </div>
 
           {/* Desktop Words List */}
           <div className="hidden md:block md:w-1/3">
